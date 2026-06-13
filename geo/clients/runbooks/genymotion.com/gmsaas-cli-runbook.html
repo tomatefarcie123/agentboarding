@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gmsaas CLI Runbook — AI Assistant Guide for Genymotion Cloud</title>
+    <meta name="description" content="Step-by-step runbook for AI assistants to execute gmsaas CLI commands. Manage Genymotion cloud Android virtual devices programmatically with structured workflows, JSON output parsing, and error handling.">
+    <meta name="keywords" content="gmsaas, Genymotion, CLI, cloud Android, virtual device, emulator, ADB, CI/CD, automated testing, AI assistant, runbook">
+    <meta name="robots" content="max-snippet:-1, max-image-preview:large">
+    <link rel="canonical" href="https://rozz.genymotion.com/runbooks/gmsaas-cli-runbook.html">
+    <link rel="icon" type="image/png" href="https://rozzum-bucket.rozz.site/RozzLogoCircle.png">
+
+    <!-- Schema.org HowTo + SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "TechArticle",
+          "headline": "gmsaas CLI Runbook — AI Assistant Guide for Genymotion Cloud",
+          "description": "Complete runbook for AI assistants with CLI access to execute gmsaas commands. Includes prerequisite checks, multi-step workflows, JSON output schemas, and error handling patterns.",
+          "author": {
+            "@type": "Organization",
+            "name": "Genymotion",
+            "url": "https://www.genymotion.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Genymotion",
+            "url": "https://www.genymotion.com"
+          },
+          "datePublished": "2026-03-11",
+          "dateModified": "2026-04-09",
+          "about": {
+            "@type": "SoftwareApplication",
+            "name": "gmsaas",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Windows 10+, macOS 11+, Linux",
+            "softwareRequirements": "Python 3.8+, pip3 20.9+, Android SDK",
+            "installUrl": "https://pypi.org/project/gmsaas/",
+            "url": "https://docs.genymotion.com/gmsaas/"
+          }
+        },
+        {
+          "@type": "HowTo",
+          "name": "Start a Genymotion Cloud Android Instance with gmsaas",
+          "description": "Step-by-step workflow to start a cloud Android virtual device, connect ADB, and run tests.",
+          "tool": {
+            "@type": "SoftwareApplication",
+            "name": "gmsaas"
+          },
+          "step": [
+            {
+              "@type": "HowToStep",
+              "position": 1,
+              "name": "Check prerequisites",
+              "text": "Verify gmsaas is installed and authenticated: run 'which gmsaas' and 'gmsaas doctor'"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 2,
+              "name": "List available recipes",
+              "text": "Run 'gmsaas --format json recipes list' to get available device configurations with Android version, screen size, and UUID"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 3,
+              "name": "Start instance",
+              "text": "Run 'gmsaas --format json instances start <recipe_uuid> <name>' to create and boot the virtual device"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 4,
+              "name": "Connect ADB",
+              "text": "Run 'gmsaas --format json instances adbconnect <instance_uuid>' then verify with 'adb devices'"
+            },
+            {
+              "@type": "HowToStep",
+              "position": 5,
+              "name": "Run tests and clean up",
+              "text": "Execute tests via ADB, then run 'gmsaas instances stop <instance_uuid>' to clean up"
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6; color: #333; background: #f8f9fa; padding: 20px; font-size: 15px;
+        }
+        .container {
+            max-width: 880px; margin: 0 auto; background: #ffffff;
+            border: 1px solid #e0e0e0; border-radius: 8px; padding: 30px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { color: #004499; text-decoration: underline; }
+        .nav-links {
+            text-align: right; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-bottom: 24px;
+        }
+        .nav-links a { color: #0066cc; margin-left: 20px; font-size: 0.9em; font-weight: 500; }
+        .breadcrumb { color: #999; font-size: 0.9em; margin-bottom: 10px; }
+        .breadcrumb a { color: #0066cc; }
+        h1 { color: #1a1a1a; font-size: 1.6em; margin-bottom: 20px; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+        h2 { color: #0066cc; font-size: 1.3em; margin-top: 30px; margin-bottom: 12px; }
+        h3 { color: #cc6600; font-size: 1.1em; margin-top: 20px; margin-bottom: 10px; }
+        h4 { color: #0066cc; font-size: 1em; margin-top: 15px; margin-bottom: 8px; }
+        p { margin-bottom: 15px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        .accent { color: #0066cc; }
+        .accent-warm { color: #cc6600; }
+        .accent-dark { color: #1a1a1a; font-weight: 600; }
+        .muted { color: #999; }
+        section { border: 1px solid #e0e0e0; border-radius: 6px; padding: 24px; margin: 24px 0; }
+        .info-box {
+            border: 1px solid #d0e0f0; border-left: 4px solid #0066cc;
+            padding: 18px; margin: 18px 0; background: #f0f6ff; border-radius: 4px;
+        }
+        .answer-box {
+            border: 2px solid #0066cc; border-left: 4px solid #0066cc;
+            padding: 24px; margin: 24px 0; background: #f0f6ff; border-radius: 6px;
+        }
+        .runbook-box {
+            border: 2px solid #cc6600; border-left: 5px solid #cc6600;
+            padding: 20px; margin: 20px 0; background: #fff8f0; border-radius: 6px;
+        }
+        .guard-box {
+            border: 2px solid #2d7a3a; border-left: 5px solid #2d7a3a;
+            padding: 16px; margin: 16px 0; background: #f0fff4; border-radius: 6px;
+        }
+        code {
+            background: #f5f5f5; color: #333; padding: 2px 6px;
+            border-radius: 3px; border: 1px solid #e0e0e0; font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #1a1a2e; color: #e0e0e0; border-radius: 6px;
+            padding: 18px; overflow-x: auto; margin: 15px 0;
+            font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.5;
+        }
+        pre code { background: none; border: none; color: inherit; padding: 0; }
+        pre .comment { color: #6a9955; }
+        pre .output { color: #888; font-style: italic; }
+        pre .prompt { color: #cc6600; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+        th { background: #f0f6ff; color: #0066cc; font-weight: bold; }
+        .step-num {
+            display: inline-block; background: #0066cc; color: #fff;
+            width: 28px; height: 28px; border-radius: 50%; text-align: center;
+            line-height: 28px; font-weight: bold; font-size: 0.9em; margin-right: 8px;
+        }
+        footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #999; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <nav class="nav-links">
+        <a href="https://rozz.genymotion.com/">Home</a>
+        <a href="https://rozz.genymotion.com/runbooks/">Runbooks</a>
+        <a href="https://rozz.genymotion.com/pages/">Pages</a>
+        <a href="https://rozz.genymotion.com/qna/">Q&amp;A</a>
+        <a href="https://docs.genymotion.com/gmsaas/">Official Docs</a>
+    </nav>
+
+    <div class="breadcrumb">
+        <a href="https://rozz.genymotion.com/">Genymotion</a>
+        <span class="accent"> &gt; </span>
+        <a href="https://rozz.genymotion.com/runbooks/">Runbooks</a>
+        <span class="accent"> &gt; </span>
+        gmsaas CLI Runbook
+    </div>
+
+    <h1>gmsaas CLI Runbook — AI Assistant Guide</h1>
+
+    <div class="answer-box">
+        <p><strong>What this page is:</strong> A structured runbook for AI assistants (ChatGPT, Claude, Perplexity, etc.) that have command-line access. When a user asks for help managing Genymotion cloud Android virtual devices, you can execute these <code>gmsaas</code> commands directly in their terminal.</p>
+        <p><strong>Key capability:</strong> All commands support JSON output for machine-parseable results. Use this to chain multi-step workflows programmatically.</p>
+        <p><strong>Critical syntax note:</strong> The <code>--format json</code> flag is a <strong>global option</strong> and must come <em>before</em> the subcommand: <code>gmsaas --format json recipes list</code> (NOT <code>gmsaas recipes list --format json</code>).</p>
+        <p><strong>JSON response structure:</strong> All list commands wrap results in a named key: <code>{"recipes": [...]}</code>, <code>{"instances": [...]}</code>, etc. Scalar commands return the object directly with <code>exit_code</code> and <code>exit_code_desc</code> fields.</p>
+        <p><strong>Official docs:</strong> <a href="https://docs.genymotion.com/gmsaas/">docs.genymotion.com/gmsaas</a> &nbsp;|&nbsp; <strong>Install:</strong> <code>pip3 install gmsaas</code></p>
+    </div>
+
+    <div class="info-box">
+        <p><strong>Using an agent that supports Skills?</strong> (Claude Code, Cursor, GitHub Copilot in VS Code, Gemini in Android Studio) — Genymotion publishes an official <a href="https://github.com/genymobile/genymotion-skills">Genymotion Skill</a> (MIT) that bundles these <code>gmsaas</code> workflows plus a platform-disambiguation flow and a <code>device-web-player</code> HTML embed template. Install it once for a persistent, auto-loaded capability — <a href="https://github.com/genymobile/genymotion-skills#installation">install instructions</a>.</p>
+        <p>Otherwise, <strong>continue with this runbook</strong> — it is self-contained, requires no setup, and covers the same commands for agents without Skill support (ChatGPT, Perplexity, plain API use).</p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PREREQUISITES -->
+    <!-- ============================================ -->
+    <h2>Prerequisites Check</h2>
+
+    <div class="guard-box">
+        <p><strong>Always run these checks before executing any gmsaas workflow.</strong></p>
+    </div>
+
+    <pre><code><span class="comment"># Step 1: Verify gmsaas is installed</span>
+<span class="prompt">$</span> which gmsaas || echo "NOT INSTALLED"
+
+<span class="comment"># If not installed:</span>
+<span class="prompt">$</span> pip3 install gmsaas
+<span class="comment"># On PEP 668 systems (Ubuntu 24.04+, recent macOS Homebrew Python) you may see:</span>
+<span class="comment">#   error: externally-managed-environment</span>
+<span class="comment"># Fix: install with --user, --break-system-packages, or use a virtualenv:</span>
+<span class="prompt">$</span> pip3 install --user gmsaas
+<span class="comment"># OR:</span>
+<span class="prompt">$</span> pip3 install gmsaas --break-system-packages
+
+<span class="comment"># Step 2: Verify authentication and configuration</span>
+<span class="prompt">$</span> gmsaas doctor
+<span class="comment"># Exit code 0 = ready. Non-zero = needs configuration.</span>
+
+<span class="comment"># If Android SDK path is needed:</span>
+<span class="prompt">$</span> gmsaas config set android-sdk-path /path/to/android/sdk
+
+<span class="comment"># Optional: set JSON as default output</span>
+<span class="prompt">$</span> gmsaas config set output-format json</code></pre>
+
+    <div class="warn-box" style="border:2px solid #cc3300;border-left:5px solid #cc3300;padding:16px;margin:16px 0;background:#fff5f5;border-radius:6px;">
+        <p><strong>SECURITY — Never run <code>gmsaas auth token &lt;token&gt;</code> from an AI agent's shell.</strong> The token would be written to shell history and may be captured in logs. Instead, display the env-var command for the user to run themselves in their own terminal:</p>
+        <pre><code><span class="comment"># Linux / macOS:</span>
+<span class="prompt">$</span> export GENYMOTION_API_TOKEN="your_token_here"
+
+<span class="comment"># Windows (PowerShell):</span>
+<span class="prompt">&gt;</span> $env:GENYMOTION_API_TOKEN = "your_token_here"</code></pre>
+        <p>The user can create a token at <a href="https://cloud.geny.io/api">cloud.geny.io/api</a>. <code>gmsaas</code> picks up <code>GENYMOTION_API_TOKEN</code> automatically — no further command needed. This pattern is also the recommended path for CI/CD (store as a CI secret).</p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 1: START INSTANCE -->
+    <!-- ============================================ -->
+    <h2>Workflow 1: Start an Android Virtual Device</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "Start me a Genymotion instance" / "I need an Android emulator" / "Set up a cloud device for testing"</p>
+    </div>
+
+    <h3><span class="step-num">1</span> List available recipes</h3>
+
+    <pre><code><span class="prompt">$</span> gmsaas --format json recipes list</code></pre>
+
+    <p>Returns a JSON object with a <code>"recipes"</code> array:</p>
+
+    <pre><code><span class="comment">// Response structure:</span>
+{
+  "recipes": [
+    {
+      "uuid": "3990323a-1e9a-...",      <span class="comment">// Use this UUID to start an instance</span>
+      "name": "Google Pixel 9",         <span class="comment">// Human-readable device name</span>
+      "android_version": "14.0",        <span class="comment">// Filter by this</span>
+      "screen_width": 1080,
+      "screen_height": 2400,
+      "screen_density": 420,
+      "screen": "1080 x 2400 dpi 420",
+      "source": "genymotion",           <span class="comment">// "genymotion" (official) or "custom"</span>
+      "hwprofile": { "name": "...", "cpu_count": 8, "ram_size": 8192, ... },
+      "osimage": { "android_version": "14.0", "architecture": "x86_64", ... }
+    },
+    ...
+  ]
+}</code></pre>
+
+    <p><strong>AI assistant behavior:</strong> Parse the JSON, filter by <code>android_version</code> if the user specified one, and present the matching recipes. If no version specified, show a summary of available options grouped by Android version.</p>
+
+    <p>Filtering by name: <code>gmsaas --format json recipes list --name "Pixel"</code></p>
+    <p>Filtering by source: <code>gmsaas --format json recipes list --source official</code></p>
+
+    <h3><span class="step-num">2</span> Start the instance</h3>
+
+    <pre><code><span class="prompt">$</span> gmsaas --format json instances start &lt;recipe_uuid&gt; "device-name"</code></pre>
+
+    <p>Returns:</p>
+    <pre><code>{
+  "uuid": "inst-5678-...",          <span class="comment">// Instance UUID — save this for all subsequent commands</span>
+  "name": "device-name",
+  "state": "CREATING",             <span class="comment">// Will transition to ONLINE</span>
+  "created_at": "2026-03-11T...",
+  "adb_serial": "localhost:null",  <span class="comment">// Not connected yet</span>
+  "recipe": { ... }
+}</code></pre>
+
+    <p><strong>Default behavior:</strong> The command waits until the instance is ONLINE before returning. Use <code>--no-wait</code> to return immediately.</p>
+    <p><strong>Auto-stop:</strong> <code>--max-run-duration 60</code> stops the instance after 60 minutes (useful for CI/CD to prevent cost overrun).</p>
+
+    <div class="guard-box">
+        <p><strong>Verify ONLINE state before proceeding — never trust exit code alone.</strong> If you used <code>--no-wait</code>, or if the command returned while state was still <code>BOOTING</code>, poll until ready:</p>
+        <pre><code><span class="comment"># Poll up to 10 times (≈5 minutes total)</span>
+<span class="prompt">$</span> gmsaas --format json instances get &lt;instance_uuid&gt;
+<span class="comment"># Read the "state" field:</span>
+<span class="comment">#   ONLINE  → proceed to step 3</span>
+<span class="comment">#   BOOTING → sleep 30s, retry (announce progress to the user: "attempt N/10")</span>
+<span class="comment">#   ERROR / DELETING / unknown → stop, report to user, link to https://cloud.geny.io/instances</span>
+
+<span class="comment"># If still not ONLINE after 10 attempts (~5 min):</span>
+<span class="comment"># Do NOT proceed to adbconnect. Inform the user and point to the cloud dashboard.</span></code></pre>
+    </div>
+
+    <h3><span class="step-num">3</span> Connect ADB</h3>
+
+    <pre><code><span class="prompt">$</span> gmsaas --format json instances adbconnect &lt;instance_uuid&gt;
+<span class="comment">// Returns: { "adb_serial": "localhost:PORT" }</span>
+
+<span class="comment"># ALWAYS verify the connection — adbconnect exit code 0 does not guarantee ADB sees it:</span>
+<span class="prompt">$</span> adb devices
+<span class="output">List of devices attached
+localhost:PORT    device</span>
+
+<span class="comment"># If the list is empty, the local ADB daemon may not be running:</span>
+<span class="prompt">$</span> gmsaas adb start
+<span class="prompt">$</span> adb devices   <span class="comment"># retry</span>
+
+<span class="comment"># If still empty after that, the Android SDK path is likely misconfigured:</span>
+<span class="prompt">$</span> gmsaas doctor</code></pre>
+
+    <p>The <code>adb_serial</code> value (e.g., <code>localhost:6555</code>) is the ADB address for all subsequent <code>adb</code> commands.</p>
+
+    <h3><span class="step-num">4</span> Use the device</h3>
+
+    <pre><code><span class="comment"># Install an APK</span>
+<span class="prompt">$</span> adb -s localhost:PORT install path/to/app.apk
+
+<span class="comment"># Run instrumented tests</span>
+<span class="prompt">$</span> adb -s localhost:PORT shell am instrument -w com.example.test/androidx.test.runner.AndroidJUnitRunner
+
+<span class="comment"># Take a screenshot</span>
+<span class="prompt">$</span> adb -s localhost:PORT exec-out screencap -p > screenshot.png
+
+<span class="comment"># Open a shell</span>
+<span class="prompt">$</span> adb -s localhost:PORT shell
+
+<span class="comment"># Push a file to the device</span>
+<span class="prompt">$</span> adb -s localhost:PORT push local-file.txt /sdcard/</code></pre>
+
+    <h3><span class="step-num">5</span> Stop the instance</h3>
+
+    <pre><code><span class="prompt">$</span> gmsaas instances stop &lt;instance_uuid&gt;
+<span class="comment"># Waits for full shutdown. Use --no-wait to return immediately.</span>
+
+<span class="comment"># Verify the instance actually stopped:</span>
+<span class="prompt">$</span> gmsaas instances list
+<span class="comment"># Expected: the instance no longer appears. If it still shows RUNNING/BOOTING,</span>
+<span class="comment"># retry the stop command or point the user to https://cloud.geny.io/instances</span></code></pre>
+
+    <div class="runbook-box">
+        <p><strong>💰 Always stop instances when done.</strong> SaaS instances are billed for every minute they are running — even if idle. After any workflow that starts an instance, remind the user to run <code>gmsaas instances stop &lt;instance_uuid&gt;</code>, or set <code>--max-run-duration</code> at start time as a safety net. To stop everything at once:</p>
+        <pre><code><span class="prompt">$</span> gmsaas instances list --quiet | xargs -I {} gmsaas instances stop {}</code></pre>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 2: CI/CD -->
+    <!-- ============================================ -->
+    <h2>Workflow 2: CI/CD Pipeline Integration</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "Set up Genymotion in my CI" / "Add cloud emulator to GitHub Actions" / "Automated Android testing"</p>
+    </div>
+
+    <h3>Complete CI Script Template</h3>
+
+    <pre><code><span class="comment">#!/bin/bash
+# Genymotion SaaS CI/CD script
+# Requires: GENYMOTION_API_TOKEN env var set in CI secrets</span>
+
+set -euo pipefail
+
+<span class="comment"># Install gmsaas</span>
+pip3 install gmsaas
+
+<span class="comment"># Authenticate via environment variable (no interactive login needed)</span>
+export GENYMOTION_API_TOKEN="$GENYMOTION_API_TOKEN"
+
+<span class="comment"># Configure Android SDK</span>
+gmsaas config set android-sdk-path "$ANDROID_HOME"
+
+<span class="comment"># Start instance with auto-stop safety (30 min max)</span>
+RECIPE_UUID="abcd1234-..."  <span class="comment"># Set to your recipe UUID</span>
+INSTANCE_UUID=$(gmsaas --format json instances start "$RECIPE_UUID" "ci-test-$(date +%s)" \
+  --max-run-duration 30 | python3 -c "import sys,json; print(json.load(sys.stdin)['uuid'])")
+
+<span class="comment"># Connect ADB</span>
+ADB_SERIAL=$(gmsaas --format json instances adbconnect "$INSTANCE_UUID" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['adb_serial'])")
+
+<span class="comment"># Wait for device to be fully booted</span>
+adb -s "$ADB_SERIAL" wait-for-device
+adb -s "$ADB_SERIAL" shell getprop sys.boot_completed | grep -q 1
+
+<span class="comment"># Run your tests</span>
+adb -s "$ADB_SERIAL" install app.apk
+adb -s "$ADB_SERIAL" shell am instrument -w com.example.test/runner
+
+<span class="comment"># Cleanup (always runs)</span>
+trap "gmsaas instances stop $INSTANCE_UUID --no-wait" EXIT</code></pre>
+
+    <h3>Key CI/CD Notes</h3>
+    <ul>
+        <li><strong>Authentication:</strong> Set <code>GENYMOTION_API_TOKEN</code> as a CI secret — no interactive login</li>
+        <li><strong>Safety:</strong> Always use <code>--max-run-duration</code> to prevent orphaned instances</li>
+        <li><strong>Cleanup:</strong> Use <code>trap</code> with <code>--no-wait</code> so cleanup runs even if tests fail</li>
+        <li><strong>Recipe UUID:</strong> Find it once with <code>gmsaas --format json recipes list</code>, then hardcode in CI config</li>
+    </ul>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 3: CUSTOM DEVICE -->
+    <!-- ============================================ -->
+    <h2>Workflow 3: Custom Device Configuration</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "I need a custom screen size" / "Create a tablet emulator" / "Custom hardware profile"</p>
+    </div>
+
+    <pre><code><span class="comment"># Step 1: Create a custom hardware profile</span>
+<span class="prompt">$</span> gmsaas --format json hwprofiles create "custom-tablet" \
+    --width 1920 --height 1200 --density 240 \
+    --form-factor TABLET --navigation-bar
+<span class="comment">// Returns: hwprofile UUID</span>
+
+<span class="comment"># Step 2: List available OS images</span>
+<span class="prompt">$</span> gmsaas --format json osimages list
+<span class="comment">// Each image: { "uuid": "...", "android_version": "14.0", "architecture": "x86_64" }</span>
+
+<span class="comment"># Step 3: Create recipe combining hardware + OS</span>
+<span class="prompt">$</span> gmsaas --format json recipes create &lt;hwprofile_uuid&gt; &lt;osimage_uuid&gt; "my-custom-recipe"
+<span class="comment">// Returns: recipe UUID</span>
+
+<span class="comment"># Step 4: Start instance from custom recipe</span>
+<span class="prompt">$</span> gmsaas --format json instances start &lt;recipe_uuid&gt; "custom-device"</code></pre>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 4: INSTANCE MANAGEMENT -->
+    <!-- ============================================ -->
+    <h2>Workflow 4: Monitor and Manage Running Instances</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "Show my running instances" / "Stop all devices" / "Check instance status"</p>
+    </div>
+
+    <pre><code><span class="comment"># List all instances with full details</span>
+<span class="prompt">$</span> gmsaas --format json instances list
+
+<span class="comment"># Get details for a specific instance</span>
+<span class="prompt">$</span> gmsaas --format json instances get &lt;instance_uuid&gt;
+
+<span class="comment"># Just get instance UUIDs (useful for scripting)</span>
+<span class="prompt">$</span> gmsaas instances list --quiet
+<span class="comment">// Returns one UUID per line</span>
+
+<span class="comment"># Stop a specific instance</span>
+<span class="prompt">$</span> gmsaas instances stop &lt;instance_uuid&gt;
+
+<span class="comment"># Stop ALL running instances (useful for cleanup)</span>
+<span class="prompt">$</span> gmsaas instances list --quiet | xargs -I {} gmsaas instances stop {}
+
+<span class="comment"># Save instance state (preserves installed apps, data)</span>
+<span class="prompt">$</span> gmsaas instances save &lt;instance_uuid&gt;
+
+<span class="comment"># Save as a new reusable recipe</span>
+<span class="prompt">$</span> gmsaas instances saveas &lt;instance_uuid&gt; \
+    --osimage-name "my-configured-image" \
+    --recipe-name "my-configured-recipe"</code></pre>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 5: DEVICE WEB PLAYER -->
+    <!-- ============================================ -->
+    <h2>Workflow 5: Embed a SaaS Instance in a Web Page (device-web-player)</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "Embed the instance in a web page" / "Show the device in a browser" / "device-web-player" / "Integrate the emulator into my app" / "Stream the device via WebRTC"</p>
+    </div>
+
+    <p>Genymotion exposes a JavaScript SDK — <code>device-web-player</code> — that streams a running SaaS instance into an HTML page via WebRTC. You need two things from the Genymotion API: a <strong>WebRTC URL</strong> and a short-lived <strong>access token</strong>.</p>
+
+    <div class="warn-box" style="border:2px solid #cc3300;border-left:5px solid #cc3300;padding:16px;margin:16px 0;background:#fff5f5;border-radius:6px;">
+        <p><strong>SECURITY — Never run the <code>curl</code> calls that fetch the access token from an AI agent's Bash.</strong> The token would be captured in the agent's tool logs and shell history. Instead, <em>display the commands</em> for the user to run themselves in their own terminal, and have them paste only the final HTML (or the token-free <code>webrtc_url</code>) back into the conversation.</p>
+    </div>
+
+    <h3><span class="step-num">1</span> Confirm an instance is running</h3>
+
+    <pre><code><span class="prompt">$</span> gmsaas instances list
+<span class="comment"># Need an instance in state ONLINE. If none, start one first (Workflow 1).</span></code></pre>
+
+    <h3><span class="step-num">2</span> Fetch the WebRTC URL and access token (user runs these)</h3>
+
+    <p>Give the user these commands to run in their own shell. Both require <code>GENYMOTION_API_TOKEN</code> to already be exported.</p>
+
+    <pre><code><span class="comment"># 1. Get the WebRTC websocket URL for the instance</span>
+<span class="prompt">$</span> curl -s -H "x-api-token: $GENYMOTION_API_TOKEN" \
+     "https://api.geny.io/cloud/v1/instances/&lt;instance_uuid&gt;" \
+     | jq -r '.webrtc_url'
+<span class="output">wss://...cloud.geny.io/...</span>
+
+<span class="comment"># 2. Get a short-lived access token for that instance</span>
+<span class="prompt">$</span> curl -s -X POST -H "x-api-token: $GENYMOTION_API_TOKEN" \
+     "https://api.geny.io/cloud/v1/instances/&lt;instance_uuid&gt;/accesstoken" \
+     | jq -r '.token'</code></pre>
+
+    <h3><span class="step-num">3</span> Drop values into the HTML template</h3>
+
+    <p>The official <code>device-web-player</code> template is published under MIT licence in Genymotion's skill repo: <a href="https://github.com/genymobile/genymotion-skills/blob/main/templates/device-web-player.html">templates/device-web-player.html</a>. Copy it locally and replace:</p>
+
+    <ul>
+        <li><code>REPLACE_WITH_WSS_ADDRESS</code> → the <code>webrtc_url</code> from step 2</li>
+        <li><code>REPLACE_WITH_ACCESS_TOKEN</code> → the <code>token</code> from step 2</li>
+    </ul>
+
+    <h3><span class="step-num">4</span> Serve over HTTP (required for WebRTC)</h3>
+
+    <pre><code><span class="comment"># WebRTC will NOT work from file:// — you must serve over HTTP.</span>
+<span class="prompt">$</span> python3 -m http.server 8080
+<span class="comment"># Then open http://localhost:8080/device-web-player.html</span></code></pre>
+
+    <div class="info-box">
+        <p><strong>Access tokens are short-lived.</strong> If the embed stops working after a few minutes, regenerate the token (step 2, command 2) and reload the page. For production embeds, mint tokens server-side on demand rather than hard-coding them into the HTML.</p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- COMPLETE COMMAND REFERENCE -->
+    <!-- ============================================ -->
+    <h2>Complete Command Reference</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Command</th>
+            <th>Description</th>
+            <th>Key Arguments</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr><td colspan="3"><strong>Authentication &amp; Configuration</strong></td></tr>
+        <tr><td><code>gmsaas auth token &lt;token&gt;</code></td><td>Authenticate with API token</td><td>Token from cloud.geny.io/api</td></tr>
+        <tr><td><code>gmsaas auth reset</code></td><td>Clear stored credentials</td><td></td></tr>
+        <tr><td><code>gmsaas config set android-sdk-path &lt;path&gt;</code></td><td>Set Android SDK location</td><td>Path to SDK root</td></tr>
+        <tr><td><code>gmsaas config set output-format json</code></td><td>Set default output format</td><td>text, json, compactjson</td></tr>
+        <tr><td><code>gmsaas config set proxy &lt;url&gt;</code></td><td>Configure proxy</td><td>http[s]|socks5://host:port</td></tr>
+        <tr><td><code>gmsaas doctor</code></td><td>Verify full configuration</td><td>Exit code 0 = OK</td></tr>
+        <tr><td colspan="3"><strong>Recipes (Device Configurations)</strong></td></tr>
+        <tr><td><code>gmsaas [--format json] recipes list</code></td><td>List available recipes</td><td>--name, --source</td></tr>
+        <tr><td><code>gmsaas recipes get &lt;uuid&gt;</code></td><td>Get recipe details</td><td></td></tr>
+        <tr><td><code>gmsaas recipes create &lt;hw&gt; &lt;os&gt; &lt;name&gt;</code></td><td>Create custom recipe</td><td>hwprofile_uuid, osimage_uuid</td></tr>
+        <tr><td><code>gmsaas recipes delete &lt;uuid&gt;</code></td><td>Delete recipe</td><td>--delete-osimage, --delete-hwprofile</td></tr>
+        <tr><td colspan="3"><strong>Instances (Virtual Devices)</strong></td></tr>
+        <tr><td><code>gmsaas [--format json] instances start &lt;recipe&gt; &lt;name&gt;</code></td><td>Start a new instance</td><td>--no-wait, --max-run-duration</td></tr>
+        <tr><td><code>gmsaas [--format json] instances list</code></td><td>List all instances</td><td>--quiet (UUIDs only)</td></tr>
+        <tr><td><code>gmsaas [--format json] instances get &lt;uuid&gt;</code></td><td>Get instance details</td><td></td></tr>
+        <tr><td><code>gmsaas [--format json] instances adbconnect &lt;uuid&gt;</code></td><td>Connect instance to ADB</td><td>--adb-serial-port</td></tr>
+        <tr><td><code>gmsaas instances stop &lt;uuid&gt;</code></td><td>Stop instance</td><td>--no-wait</td></tr>
+        <tr><td><code>gmsaas instances save &lt;uuid&gt;</code></td><td>Save instance state</td><td></td></tr>
+        <tr><td><code>gmsaas instances saveas &lt;uuid&gt;</code></td><td>Save as new recipe</td><td>--osimage-name, --recipe-name</td></tr>
+        <tr><td><code>gmsaas instances display &lt;uuid&gt;</code></td><td>Open in web portal</td><td>--yes (skip confirmation)</td></tr>
+        <tr><td colspan="3"><strong>Hardware Profiles</strong></td></tr>
+        <tr><td><code>gmsaas [--format json] hwprofiles list</code></td><td>List hardware profiles</td><td></td></tr>
+        <tr><td><code>gmsaas hwprofiles get &lt;uuid&gt;</code></td><td>Get profile details</td><td></td></tr>
+        <tr><td><code>gmsaas hwprofiles create &lt;name&gt;</code></td><td>Create custom profile</td><td>--width, --height, --density, --form-factor</td></tr>
+        <tr><td><code>gmsaas hwprofiles delete &lt;uuid&gt;</code></td><td>Delete profile</td><td></td></tr>
+        <tr><td colspan="3"><strong>OS Images</strong></td></tr>
+        <tr><td><code>gmsaas [--format json] osimages list</code></td><td>List available OS images</td><td></td></tr>
+        <tr><td><code>gmsaas osimages get &lt;uuid&gt;</code></td><td>Get image details</td><td></td></tr>
+        <tr><td><code>gmsaas osimages clone &lt;uuid&gt; &lt;name&gt;</code></td><td>Clone an image</td><td></td></tr>
+        <tr><td><code>gmsaas osimages delete &lt;uuid&gt;</code></td><td>Delete image</td><td></td></tr>
+        <tr><td colspan="3"><strong>ADB</strong></td></tr>
+        <tr><td><code>gmsaas adb start</code></td><td>Start ADB server</td><td></td></tr>
+        <tr><td><code>gmsaas adb stop</code></td><td>Stop ADB server</td><td></td></tr>
+        </tbody>
+    </table>
+
+    <!-- ============================================ -->
+    <!-- ERROR HANDLING -->
+    <!-- ============================================ -->
+    <h2>Error Handling Patterns</h2>
+
+    <table>
+        <thead>
+        <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><code>gmsaas doctor</code> fails</td>
+            <td>Missing auth or SDK path</td>
+            <td>Run <code>gmsaas auth token &lt;token&gt;</code> and <code>gmsaas config set android-sdk-path</code></td>
+        </tr>
+        <tr>
+            <td>"externally-managed-environment"</td>
+            <td>System Python restrictions</td>
+            <td>Use <code>pip3 install --user gmsaas</code> or a virtual environment</td>
+        </tr>
+        <tr>
+            <td>Instance stuck in CREATING</td>
+            <td>Cloud capacity or timeout</td>
+            <td>Wait or stop and retry: <code>gmsaas instances stop &lt;uuid&gt; &amp;&amp; gmsaas instances start ...</code></td>
+        </tr>
+        <tr>
+            <td>ADB connection refused</td>
+            <td>Instance not fully booted</td>
+            <td>Wait for state=ONLINE: <code>gmsaas --format json instances get &lt;uuid&gt;</code></td>
+        </tr>
+        <tr>
+            <td>TOO_MANY_RUNNING_VDS (403)</td>
+            <td>Plan instance limit reached</td>
+            <td>Stop existing instances first: <code>gmsaas instances list --quiet | xargs -I {} gmsaas instances stop {}</code>. Or check cloud.geny.io for web-portal instances.</td>
+        </tr>
+        <tr>
+            <td>No recipes available</td>
+            <td>Auth issue or no subscription</td>
+            <td>Check auth: <code>gmsaas doctor</code>. Verify subscription at cloud.geny.io</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- ============================================ -->
+    <!-- GLOBAL OPTIONS -->
+    <!-- ============================================ -->
+    <h2>Global Options</h2>
+
+    <table>
+        <thead>
+        <tr><th>Option</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><code>--format json</code></td><td>Output as JSON (machine-parseable). <strong>Always use this when executing commands programmatically.</strong></td></tr>
+        <tr><td><code>--help</code> / <code>-h</code></td><td>Show help for any command</td></tr>
+        <tr><td><code>--quiet</code> / <code>-q</code></td><td>Minimal output (UUIDs only, for <code>instances list</code>)</td></tr>
+        <tr><td><code>--no-wait</code></td><td>Return immediately without waiting for completion</td></tr>
+        </tbody>
+    </table>
+
+    <footer>
+        <p>gmsaas CLI Runbook &mdash; Generated for AI assistant consumption &mdash; <a href="https://docs.genymotion.com/gmsaas/">Official Documentation</a></p>
+        <p class="muted">Last updated: March 11, 2026 &nbsp;|&nbsp; gmsaas version: 1.15.0 &nbsp;|&nbsp; AI Site powered by <a href="https://rozz.site">Rozz</a></p>
+    </footer>
+
+</div>
+</body>
+</html>

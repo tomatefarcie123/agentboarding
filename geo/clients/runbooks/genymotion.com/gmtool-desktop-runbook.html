@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gmtool &amp; genyshell Runbook — AI Assistant Guide for Genymotion Desktop</title>
+    <meta name="description" content="Step-by-step runbook for AI assistants to execute gmtool and genyshell CLI commands. Manage local Genymotion Desktop Android virtual devices, simulate sensors, and automate testing workflows.">
+    <meta name="keywords" content="gmtool, genyshell, Genymotion Desktop, CLI, Android emulator, virtual device, ADB, QEMU, VirtualBox, sensor simulation, GPS, battery, automated testing, AI assistant, runbook">
+    <meta name="robots" content="max-snippet:-1, max-image-preview:large">
+    <link rel="canonical" href="https://rozz.genymotion.com/runbooks/gmtool-desktop-runbook.html">
+    <link rel="icon" type="image/png" href="https://rozzum-bucket.rozz.site/RozzLogoCircle.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "TechArticle",
+          "headline": "gmtool & genyshell Runbook — AI Assistant Guide for Genymotion Desktop",
+          "description": "Complete runbook for AI assistants with CLI access to execute gmtool and genyshell commands. Includes prerequisite checks, device lifecycle workflows, sensor simulation, JSON output parsing, and error handling patterns tested on real hardware.",
+          "author": {
+            "@type": "Organization",
+            "name": "Genymotion",
+            "url": "https://www.genymotion.com"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Genymotion",
+            "url": "https://www.genymotion.com"
+          },
+          "datePublished": "2026-03-16",
+          "dateModified": "2026-04-09",
+          "about": [
+            {
+              "@type": "SoftwareApplication",
+              "name": "Genymotion Desktop",
+              "applicationCategory": "DeveloperApplication",
+              "operatingSystem": "Windows 10+, macOS 14+, Linux (Ubuntu 24.04+)",
+              "url": "https://www.genymotion.com/download/"
+            },
+            {
+              "@type": "SoftwareApplication",
+              "name": "gmtool",
+              "applicationCategory": "DeveloperApplication",
+              "description": "Command-line interface for managing Genymotion Desktop virtual devices"
+            },
+            {
+              "@type": "SoftwareApplication",
+              "name": "genyshell",
+              "applicationCategory": "DeveloperApplication",
+              "description": "Command-line interface for simulating sensors on Genymotion virtual devices"
+            }
+          ]
+        },
+        {
+          "@type": "HowTo",
+          "name": "Create and Start a Local Android Virtual Device with gmtool",
+          "description": "Step-by-step workflow to create, start, and interact with a local Genymotion Desktop Android virtual device.",
+          "tool": [
+            { "@type": "SoftwareApplication", "name": "gmtool" },
+            { "@type": "SoftwareApplication", "name": "adb" }
+          ],
+          "step": [
+            {
+              "@type": "HowToStep",
+              "position": 1,
+              "name": "Find gmtool",
+              "text": "gmtool is not on PATH. Use the full path: /Applications/Genymotion.app/Contents/MacOS/gmtool (macOS), C:\\Program Files\\Genymobile\\Genymotion\\gmtool.exe (Windows), or $HOME/genymotion/gmtool (Linux)."
+            },
+            {
+              "@type": "HowToStep",
+              "position": 2,
+              "name": "List hardware profiles and OS images",
+              "text": "Run 'gmtool admin hwprofiles' and 'gmtool admin osimages' to see available configurations (requires paid license)."
+            },
+            {
+              "@type": "HowToStep",
+              "position": 3,
+              "name": "Create a device",
+              "text": "Run 'gmtool admin create \"Google Pixel 9\" \"Android 14.0\" \"my-device\"' using hardware profile and OS image NAMEs. Downloads ~800MB on first use."
+            },
+            {
+              "@type": "HowToStep",
+              "position": 4,
+              "name": "Start the device",
+              "text": "Run 'gmtool admin start \"my-device\"'. Returns no output on success (exit code 0). Use --coldboot if device fails to start."
+            },
+            {
+              "@type": "HowToStep",
+              "position": 5,
+              "name": "Connect ADB and use the device",
+              "text": "Run 'gmtool device adbconnect --name \"my-device\"' (note: --name goes AFTER the action). Or read adb_serial from 'gmtool --format json admin list' and connect directly with 'adb connect'."
+            },
+            {
+              "@type": "HowToStep",
+              "position": 6,
+              "name": "Stop the device",
+              "text": "Run 'gmtool admin stop \"my-device\"' when finished."
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6; color: #333; background: #f8f9fa; padding: 20px; font-size: 15px;
+        }
+        .container {
+            max-width: 880px; margin: 0 auto; background: #ffffff;
+            border: 1px solid #e0e0e0; border-radius: 8px; padding: 30px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { color: #004499; text-decoration: underline; }
+        .nav-links {
+            text-align: right; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-bottom: 24px;
+        }
+        .nav-links a { color: #0066cc; margin-left: 20px; font-size: 0.9em; font-weight: 500; }
+        .breadcrumb { color: #999; font-size: 0.9em; margin-bottom: 10px; }
+        .breadcrumb a { color: #0066cc; }
+        h1 { color: #1a1a1a; font-size: 1.6em; margin-bottom: 20px; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+        h2 { color: #0066cc; font-size: 1.3em; margin-top: 30px; margin-bottom: 12px; }
+        h3 { color: #cc6600; font-size: 1.1em; margin-top: 20px; margin-bottom: 10px; }
+        h4 { color: #0066cc; font-size: 1em; margin-top: 15px; margin-bottom: 8px; }
+        p { margin-bottom: 15px; }
+        ul, ol { margin-left: 25px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        .accent { color: #0066cc; }
+        .accent-warm { color: #cc6600; }
+        section { border: 1px solid #e0e0e0; border-radius: 6px; padding: 24px; margin: 24px 0; }
+        .info-box {
+            border: 1px solid #d0e0f0; border-left: 4px solid #0066cc;
+            padding: 18px; margin: 18px 0; background: #f0f6ff; border-radius: 4px;
+        }
+        .answer-box {
+            border: 2px solid #0066cc; border-left: 4px solid #0066cc;
+            padding: 24px; margin: 24px 0; background: #f0f6ff; border-radius: 6px;
+        }
+        .runbook-box {
+            border: 2px solid #cc6600; border-left: 5px solid #cc6600;
+            padding: 20px; margin: 20px 0; background: #fff8f0; border-radius: 6px;
+        }
+        .guard-box {
+            border: 2px solid #2d7a3a; border-left: 5px solid #2d7a3a;
+            padding: 16px; margin: 16px 0; background: #f0fff4; border-radius: 6px;
+        }
+        .warn-box {
+            border: 2px solid #cc3300; border-left: 5px solid #cc3300;
+            padding: 16px; margin: 16px 0; background: #fff5f5; border-radius: 6px;
+        }
+        code {
+            background: #f5f5f5; color: #333; padding: 2px 6px;
+            border-radius: 3px; border: 1px solid #e0e0e0; font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #1a1a2e; color: #e0e0e0; border-radius: 6px;
+            padding: 18px; overflow-x: auto; margin: 15px 0;
+            font-family: 'Courier New', monospace; font-size: 0.9em; line-height: 1.5;
+        }
+        pre code { background: none; border: none; color: inherit; padding: 0; }
+        pre .comment { color: #6a9955; }
+        pre .output { color: #888; font-style: italic; }
+        pre .prompt { color: #cc6600; }
+        pre .warn { color: #cc3300; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+        th { background: #f0f6ff; color: #0066cc; font-weight: bold; }
+        .step-num {
+            display: inline-block; background: #0066cc; color: #fff;
+            width: 28px; height: 28px; border-radius: 50%; text-align: center;
+            line-height: 28px; font-weight: bold; font-size: 0.9em; margin-right: 8px;
+        }
+        footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #999; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <nav class="nav-links">
+        <a href="https://rozz.genymotion.com/">Home</a>
+        <a href="https://rozz.genymotion.com/runbooks/">Runbooks</a>
+        <a href="https://rozz.genymotion.com/runbooks/gmsaas-cli-runbook.html">gmsaas (Cloud) Runbook</a>
+        <a href="https://docs.genymotion.com/desktop/">Official Docs</a>
+    </nav>
+
+    <div class="breadcrumb">
+        <a href="https://rozz.genymotion.com/">Genymotion</a>
+        <span class="accent"> &gt; </span>
+        <a href="https://rozz.genymotion.com/runbooks/">Runbooks</a>
+        <span class="accent"> &gt; </span>
+        gmtool &amp; genyshell Desktop Runbook
+    </div>
+
+    <h1>gmtool &amp; genyshell Runbook — AI Assistant Guide for Genymotion Desktop</h1>
+
+    <div class="answer-box">
+        <p><strong>What this page is:</strong> A structured runbook for AI assistants (ChatGPT, Claude, Cursor, etc.) with command-line access. When a user asks for help managing <em>local</em> Genymotion Desktop Android virtual devices, you can execute these <code>gmtool</code> and <code>genyshell</code> commands directly in their terminal.</p>
+        <p><strong>For cloud devices:</strong> Use the <a href="https://rozz.genymotion.com/runbooks/gmsaas-cli-runbook.html">gmsaas CLI runbook</a> instead.</p>
+        <p><strong>Install Genymotion Desktop:</strong> <a href="https://www.genymotion.com/download/">genymotion.com/download</a> &nbsp;|&nbsp; <strong>Official docs:</strong> <a href="https://docs.genymotion.com/desktop/">docs.genymotion.com/desktop</a></p>
+    </div>
+
+    <div class="info-box">
+        <p><strong>Using an agent that supports Skills?</strong> (Claude Code, Cursor, GitHub Copilot in VS Code, Gemini in Android Studio) — Genymotion publishes an official <a href="https://github.com/genymobile/genymotion-skills">Genymotion Skill</a> (MIT) that bundles both <code>gmtool</code> (Desktop) and <code>gmsaas</code> (Cloud) workflows, with a platform-disambiguation flow, licence/auth checks, and verify-after-action polling. Install it once for a persistent, auto-loaded capability — <a href="https://github.com/genymobile/genymotion-skills#installation">install instructions</a>.</p>
+        <p>Otherwise, <strong>continue with this runbook</strong> — it is self-contained, requires no setup, and covers the same <code>gmtool</code> and <code>genyshell</code> commands for agents without Skill support (ChatGPT, Perplexity, plain API use).</p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- CRITICAL GOTCHAS -->
+    <!-- ============================================ -->
+    <h2>Critical: Read Before Running Any Command</h2>
+
+    <div class="warn-box">
+        <p><strong>gmtool and genyshell are NOT on PATH.</strong> You must use the full path to the binary. See platform paths below.</p>
+    </div>
+
+    <h3>Binary Locations</h3>
+
+    <table>
+        <thead>
+        <tr><th>Tool</th><th>macOS</th><th>Windows</th><th>Linux</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td><code>gmtool</code></td>
+            <td><code>/Applications/Genymotion.app/Contents/MacOS/gmtool</code></td>
+            <td><code>C:\Program Files\Genymobile\Genymotion\gmtool.exe</code></td>
+            <td><code>$HOME/genymotion/gmtool</code> or <code>/opt/genymotion/gmtool</code></td>
+        </tr>
+        <tr>
+            <td><code>genyshell</code></td>
+            <td><code>/Applications/Genymotion Shell.app/Contents/MacOS/genyshell</code></td>
+            <td><code>C:\Program Files\Genymobile\Genymotion\genyshell.exe</code></td>
+            <td><code>$HOME/genymotion/genymotion-shell</code></td>
+        </tr>
+        <tr>
+            <td><code>adb</code> (bundled)</td>
+            <td><code>/Applications/Genymotion.app/Contents/MacOS/tools/adb</code></td>
+            <td><code>C:\Program Files\Genymobile\Genymotion\tools\adb.exe</code></td>
+            <td><code>$HOME/genymotion/tools/adb</code></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <pre><code><span class="comment"># Auto-discover gmtool on macOS/Linux:</span>
+<span class="prompt">$</span> GM=$(find /Applications /opt $HOME/genymotion -name gmtool -type f 2>/dev/null | head -1)
+<span class="prompt">$</span> [ -z "$GM" ] && echo "gmtool not found — install from https://www.genymotion.com/download/" && exit 1
+<span class="prompt">$</span> $GM version
+<span class="output">Version  : 3.9.0</span></code></pre>
+
+    <h3>JSON Output Is Inconsistent</h3>
+
+    <div class="info-box">
+        <p><code>gmtool</code> supports <code>--format json</code> as a <strong>global option BEFORE the subcommand</strong>: <code>gmtool --format json admin list</code></p>
+        <p>However, <strong>JSON only works on <code>admin list</code></strong>. All other commands return plain text regardless of the flag.</p>
+    </div>
+
+    <table>
+        <thead>
+        <tr><th>Output behavior</th><th>Commands</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><strong>JSON supported</strong></td><td><code>admin list</code></td></tr>
+        <tr><td><strong>No output on success</strong> (check exit code 0)</td><td><code>admin start</code>, <code>admin stop</code>, <code>admin clone</code>, <code>device adbconnect</code></td></tr>
+        <tr><td><strong>Plain text only</strong></td><td><code>admin details</code>, <code>admin create</code>, <code>admin delete</code>, <code>admin hwprofiles</code>, <code>admin osimages</code>, <code>license info</code>, <code>version</code>, <code>config list</code></td></tr>
+        <tr><td><strong>Errors always plain text</strong></td><td>All commands, even with <code>--format json</code></td></tr>
+        </tbody>
+    </table>
+
+    <h3>device Command Syntax Gotcha</h3>
+
+    <div class="warn-box">
+        <p>For <code>device</code> commands, the <code>--name</code> (or <code>-n</code>) flag goes <strong>AFTER the action</strong>, not before. Both long and short forms work, but only in the correct position:</p>
+        <ul>
+            <li>Correct: <code>gmtool device adbconnect --name "my-device"</code></li>
+            <li>Correct: <code>gmtool device adbconnect -n "my-device"</code></li>
+            <li>Wrong: <code>gmtool device --name "my-device" adbconnect</code> — "Unknown option 'name'"</li>
+            <li>Wrong: <code>gmtool device -n "my-device" adbconnect</code> — "Unknown option 'n'"</li>
+        </ul>
+    </div>
+
+    <h3>License Tiers</h3>
+
+    <table>
+        <thead>
+        <tr><th>Tier</th><th>Available Commands</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><strong>Free (Personal Use)</strong></td><td><code>admin list</code>, <code>admin start</code>, <code>admin stop</code>, <code>version</code></td></tr>
+        <tr><td><strong>Paid (Indie/Business)</strong></td><td>All free commands plus: <code>admin create</code>, <code>admin edit</code>, <code>admin details</code>, <code>admin clone</code>, <code>admin delete</code>, <code>admin stopall</code>, <code>admin factoryreset</code>, <code>admin hwprofiles</code>, <code>admin osimages</code>, <code>device install/push/pull/flash/adbconnect/adbdisconnect/logcatdump/logcatclear</code></td></tr>
+        </tbody>
+    </table>
+
+    <p>If the user gets <code>"A license is required to use this feature"</code>, they need a paid license or must use the Genymotion Desktop GUI for that operation.</p>
+
+    <!-- ============================================ -->
+    <!-- JSON RESPONSE SHAPE -->
+    <!-- ============================================ -->
+    <h2>JSON Response Shape (<code>admin list</code>)</h2>
+
+    <p>The only command with reliable JSON output. Use it to get device names, UUIDs, states, and ADB serials:</p>
+
+    <pre><code><span class="prompt">$</span> gmtool --format json admin list
+
+{
+    "exit_code": 0,
+    "exit_code_desc": "SUCCESS",
+    "instances": [
+        {
+            "adb_serial": "127.0.0.1:6555",       <span class="comment">// ADB address when running</span>
+            "adb_serial_port": 6555,
+            "name": "Google Nexus 4",              <span class="comment">// Use this or uuid to target device</span>
+            "recipe": {
+                "osimage": {
+                    "android_version": "15.0.0",
+                    "api_version": "35",
+                    "architecture": "arm64",
+                    "image_version": "3.4.0",
+                    "is_beta": false,
+                    "name": "Android 15.0"
+                }
+            },
+            "state": "on",                         <span class="comment">// "off" or "on"</span>
+            "uuid": "b54fe1d2-0e30-42e6-b62b-94b3596088b9"
+        }
+    ]
+}</code></pre>
+
+    <div class="info-box">
+        <p><strong>Note:</strong> <code>adb_serial_port</code> is <code>6554</code> when off but changes to <code>6555</code> when running. Always read <code>adb_serial</code> from <code>admin list</code> after starting the device.</p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- PREREQUISITES -->
+    <!-- ============================================ -->
+    <h2>Prerequisites Check</h2>
+
+    <div class="guard-box">
+        <p><strong>Always run these checks before executing any gmtool workflow.</strong></p>
+    </div>
+
+    <pre><code><span class="comment"># 1. Find gmtool</span>
+<span class="prompt">$</span> GM=/Applications/Genymotion.app/Contents/MacOS/gmtool  <span class="comment"># macOS</span>
+<span class="prompt">$</span> $GM version
+<span class="output">Version  : 3.9.0</span>
+
+<span class="comment"># 2. Check license tier</span>
+<span class="prompt">$</span> $GM license info
+<span class="output">License Type             : Trial</span>
+<span class="output">Activated Workstations   : 1</span>
+<span class="output">Expires on               : April 16, 2026 16:59:58</span>
+
+<span class="comment"># 3. Check hypervisor configuration</span>
+<span class="prompt">$</span> $GM config list
+<span class="output">hypervisor=qemu</span>
+<span class="output">virtual_devices.directory=/Users/me/.Genymobile/Genymotion/deployed/</span>
+
+<span class="comment"># 4. List existing devices</span>
+<span class="prompt">$</span> $GM --format json admin list | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'{len(d[\"instances\"])} devices found')"
+<span class="output">1 devices found</span></code></pre>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 1: CREATE AND START -->
+    <!-- ============================================ -->
+    <h2>Workflow 1: Create and Start a Local Device</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "Create an Android emulator" / "Set up a local Genymotion device" / "I need a Pixel 9 on Android 14"</p>
+    </div>
+
+    <h3><span class="step-num">1</span> List hardware profiles and OS images (paid)</h3>
+
+    <pre><code><span class="prompt">$</span> gmtool admin hwprofiles
+<span class="output">UUID                                  NAME                     DISPLAY              SOURCE</span>
+<span class="output">------------------------------------  -----------------------  -------------------  ------</span>
+<span class="output">b56ca2cf-2c9d-42a7-9040-53b9c0546928  Google Pixel 9           1080 x 2424 dpi 422  VENDOR</span>
+<span class="output">90f8c57b-113e-46b7-aaba-322d3329b016  Samsung Galaxy S24       1080 x 2340 dpi 418  VENDOR</span>
+<span class="output">e104f058-b291-4764-8e0d-d9ff78a41192  Custom Phone             768 x 1280 dpi 320   VENDOR</span>
+
+<span class="prompt">$</span> gmtool admin osimages
+<span class="output">UUID                                  NAME          ANDROID VERSION  API VERSION  BETA  ARCHITECTURE  SOURCE</span>
+<span class="output">------------------------------------  ------------  ---------------  -----------  ----  ------------  ----------</span>
+<span class="output">160ea4fa-d62c-4207-b540-7100541f6dc6  Android 14.0  14.0.0           34           No    arm64         Genymotion</span>
+<span class="output">a27c4113-a385-4013-856f-c5bde3dcb69c  Android 15.0  15.0.0           35           No    arm64         Genymotion</span>
+<span class="output">e04c1797-dda4-40b1-b850-dc62a2c008c7  Android 16.0  16.0.0           36           Yes   arm64         Genymotion</span></code></pre>
+
+    <p>These are <strong>plain text tables</strong> (no JSON). Use the <strong>NAME</strong> column (not UUID) when creating devices.</p>
+    <p>If you get <code>"A license is required"</code>, the user must create devices via the Genymotion Desktop GUI instead.</p>
+
+    <h3><span class="step-num">2</span> Create a device (paid, downloads ~800MB on first use)</h3>
+
+    <pre><code><span class="prompt">$</span> gmtool admin create "Google Pixel 9" "Android 14.0" "my-device"
+<span class="output">Creating my-device from hwprofile Google Pixel 9 and osimage Android 14.0</span>
+<span class="output">Downloading OsImage...</span>
+<span class="output"> (32MB / 800MB)  (257MB / 800MB)  (519MB / 800MB)  (800MB / 800MB) Download finished</span>
+<span class="output">OsImage ready</span>
+<span class="output">Virtual device created successfully</span></code></pre>
+
+    <p>Arguments: <code>&lt;hwprofile NAME&gt; &lt;osimage NAME&gt; &lt;device name&gt;</code>. Output is plain text with download progress.</p>
+    <p>Options: <code>--density 480</code>, <code>--width 1080</code>, <code>--height 2400</code>, <code>--nbcpu 4</code>, <code>--ram 4096</code>, <code>--navbar on</code>, <code>--root-access on</code>, <code>--quickboot on</code> (QEMU only)</p>
+
+    <h3><span class="step-num">3</span> Start the device (free)</h3>
+
+    <pre><code><span class="prompt">$</span> gmtool admin start "my-device"
+<span class="comment"># No output on success (exit code 0). Blocks until device is booted.</span>
+<span class="comment"># Use -t 300 to set a 5-minute timeout.</span>
+<span class="comment"># Use --coldboot to force a full boot cycle.</span></code></pre>
+
+    <div class="warn-box">
+        <p><strong>If exit code 3</strong> ("The virtual device stopped unexpectedly"): Run with <code>-v</code> for details: <code>gmtool -v admin start "my-device"</code>. Look for <code>Player exited early with error code</code>. Common cause: port 6379 conflict (see Troubleshooting).</p>
+    </div>
+
+    <h3><span class="step-num">4</span> Connect ADB</h3>
+
+    <p><strong>Option A</strong> — Use <code>gmtool</code> (paid):</p>
+    <pre><code><span class="prompt">$</span> gmtool device adbconnect --name "my-device"
+<span class="comment"># No output on success (exit code 0).</span>
+<span class="comment"># CRITICAL: --name (or -n) goes AFTER "adbconnect", not before.</span></code></pre>
+
+    <p><strong>Option B</strong> — Read ADB serial from <code>admin list</code> and connect directly (free):</p>
+    <pre><code><span class="prompt">$</span> ADB_SERIAL=$(gmtool --format json admin list | python3 -c \
+    "import sys,json; instances=json.load(sys.stdin)['instances']; \
+     print(next(i['adb_serial'] for i in instances if i['name']=='my-device'))")
+<span class="prompt">$</span> adb connect $ADB_SERIAL
+<span class="output">already connected to 127.0.0.1:6555</span>
+
+<span class="prompt">$</span> adb devices
+<span class="output">List of devices attached</span>
+<span class="output">127.0.0.1:6555	device</span></code></pre>
+
+    <h3><span class="step-num">5</span> Use the device</h3>
+
+    <pre><code><span class="comment"># With gmtool (paid) — --name goes AFTER the action:</span>
+<span class="prompt">$</span> gmtool device install --name "my-device" app.apk
+<span class="prompt">$</span> gmtool device push --name "my-device" local.txt /sdcard/Download/
+<span class="output">Pushing local.txt to my-device...</span>
+<span class="output">File pushed to my-device</span>
+<span class="prompt">$</span> gmtool device pull --name "my-device" /sdcard/file.txt .
+<span class="prompt">$</span> gmtool device logcatdump --name "my-device" logcat.txt
+<span class="output">Writing logcat for my-device into logcat.txt...</span>
+
+<span class="comment"># Or with ADB directly (free, once connected):</span>
+<span class="prompt">$</span> adb -s 127.0.0.1:6555 install app.apk
+<span class="prompt">$</span> adb -s 127.0.0.1:6555 shell
+<span class="prompt">$</span> adb -s 127.0.0.1:6555 exec-out screencap -p > screenshot.png
+<span class="prompt">$</span> adb -s 127.0.0.1:6555 shell getprop ro.build.version.release
+<span class="output">15</span></code></pre>
+
+    <h3><span class="step-num">6</span> Stop the device (free)</h3>
+
+    <pre><code><span class="prompt">$</span> gmtool admin stop "my-device"
+<span class="output">Virtual device stopped successfully</span></code></pre>
+
+    <!-- ============================================ -->
+    <!-- WORKFLOW 2: SENSOR SIMULATION -->
+    <!-- ============================================ -->
+    <h2>Workflow 2: Sensor Simulation with genyshell</h2>
+
+    <div class="runbook-box">
+        <p><strong>When the user says:</strong> "Simulate GPS location" / "Set battery to low" / "Test network conditions" / "Change device rotation"</p>
+    </div>
+
+    <div class="info-box">
+        <p><code>genyshell</code> controls sensors on <em>running</em> virtual devices. The device must be started first with <code>gmtool admin start</code>.</p>
+        <p>If only one device is running, genyshell auto-selects it. With multiple devices, use <code>-r &lt;IP&gt;</code> to target one.</p>
+    </div>
+
+    <h3>Usage Modes</h3>
+
+    <pre><code><span class="prompt">$</span> genyshell -c "gps setlatitude 48.8566"    <span class="comment"># Single command</span>
+<span class="prompt">$</span> genyshell -f test_script.sh                <span class="comment"># Run script file</span>
+<span class="prompt">$</span> genyshell -r 127.0.0.1                      <span class="comment"># Target specific device IP</span>
+<span class="prompt">$</span> genyshell -q -c "battery getlevel"          <span class="comment"># Quiet mode (less banner noise)</span></code></pre>
+
+    <div class="info-box">
+        <p><strong>Every <code>-c</code> call prints a welcome banner.</strong> When parsing output, look for the result AFTER the <code>"Genymotion virtual device selected:"</code> line:</p>
+    </div>
+
+    <pre><code><span class="output">Connection mode: local host</span>
+<span class="output">Welcome to Genymotion Shell</span>
+<span class="output"></span>
+<span class="output">Genymotion virtual device selected: Google Nexus 4</span>
+<span class="output"></span>
+<span class="output">GPS Latitude set to: 48.8566</span>     <span class="comment">&lt;-- actual result is here</span></code></pre>
+
+    <h3>GPS Commands</h3>
+
+    <pre><code><span class="prompt">$</span> genyshell -c "gps setstatus enabled"
+<span class="prompt">$</span> genyshell -c "gps setlatitude 48.8566"
+<span class="prompt">$</span> genyshell -c "gps setlongitude 2.3522"
+<span class="prompt">$</span> genyshell -c "gps setaltitude 35.0"
+<span class="prompt">$</span> genyshell -c "gps setaccuracy 1.0"
+<span class="prompt">$</span> genyshell -c "gps setbearing 180.0"
+
+<span class="comment"># Read back:</span>
+<span class="prompt">$</span> genyshell -c "gps getlatitude"
+<span class="output">GPS Latitude: 48.8566</span></code></pre>
+
+    <h3>Battery Commands</h3>
+
+    <pre><code><span class="prompt">$</span> genyshell -c "battery setmode manual"
+<span class="prompt">$</span> genyshell -c "battery setlevel 15"
+<span class="prompt">$</span> genyshell -c "battery setstatus discharging"
+<span class="comment"># Status values: charging, discharging, full, not-charging</span>
+
+<span class="comment"># Read back:</span>
+<span class="prompt">$</span> genyshell -c "battery getlevel"
+<span class="output">Battery level: 15%</span></code></pre>
+
+    <h3>Rotation, Network, Phone</h3>
+
+    <pre><code><span class="comment"># Rotation</span>
+<span class="prompt">$</span> genyshell -c "rotation setangle 90"       <span class="comment"># 0, 90, 180, 270</span>
+
+<span class="comment"># Network (Android 8+)</span>
+<span class="prompt">$</span> genyshell -c "network setstatus enabled"
+<span class="prompt">$</span> genyshell -c "network setsignalstrength 3"    <span class="comment"># 0-4</span>
+<span class="prompt">$</span> genyshell -c "network setmobileprofile edge"  <span class="comment"># full|gsm|hscsd|gprs|edge|umts|hsdpa|lte|5gnr</span>
+
+<span class="comment"># Simulate incoming call/SMS</span>
+<span class="prompt">$</span> genyshell -c "phone call 5551234567"
+<span class="prompt">$</span> genyshell -c 'phone sms 5551234567 "Test message"'
+
+<span class="comment"># Device management</span>
+<span class="prompt">$</span> genyshell -c "devices list"
+<span class="prompt">$</span> genyshell -c "devices select 127.0.0.1"</code></pre>
+
+    <h3>Scripting Example: Simulate a Delivery Route</h3>
+
+    <pre><code><span class="comment">#!/bin/bash</span>
+<span class="comment"># delivery_route_test.sh — Run with: genyshell -f delivery_route_test.sh</span>
+gps setstatus enabled
+gps setlatitude 48.8566
+gps setlongitude 2.3522
+<span class="comment"># Pause in your test framework, then update coordinates:</span>
+gps setlatitude 48.8606
+gps setlongitude 2.3376
+battery setmode manual
+battery setlevel 10
+battery setstatus discharging</code></pre>
+
+    <!-- ============================================ -->
+    <!-- PARSING PLAIN TEXT -->
+    <!-- ============================================ -->
+    <h2>Parsing Plain Text Output</h2>
+
+    <h3><code>admin details</code> — Key : Value Format</h3>
+
+    <pre><code><span class="prompt">$</span> gmtool admin details "my-device"
+<span class="output">Name                  : Google Nexus 4</span>
+<span class="output">UUID                  : b54fe1d2-0e30-42e6-b62b-94b3596088b9</span>
+<span class="output">Android Version       : 15.0.0</span>
+<span class="output">API Level             : 35</span>
+<span class="output">Screen Width          : 768</span>
+<span class="output">Screen Height         : 1280</span>
+<span class="output">Screen DPI            : 320</span>
+<span class="output">Nb CPU                : 4</span>
+<span class="output">RAM                   : 2048</span>
+<span class="output">State                 : On</span>
+<span class="output">IP                    : 127.0.0.1</span>
+<span class="output">ADB Serial            : 127.0.0.1:6555</span>
+<span class="output">Root Access           : false</span>
+<span class="output">Quickboot             : true</span>
+
+<span class="comment"># Parse a specific field:</span>
+<span class="prompt">$</span> gmtool admin details "my-device" | grep "^Android Version" | awk -F': ' '{print $2}'
+<span class="output">15.0.0</span></code></pre>
+
+    <h3><code>hwprofiles</code> and <code>osimages</code> — Fixed-Width Table</h3>
+
+    <p>Parse by splitting on 2+ consecutive spaces, or use column positions. The NAME column is what you pass to <code>admin create</code>.</p>
+
+    <!-- ============================================ -->
+    <!-- COMPLETE COMMAND REFERENCE -->
+    <!-- ============================================ -->
+    <h2>Complete Command Reference</h2>
+
+    <p>Global options: <code>-t, --timeout &lt;0-3600&gt;</code> (seconds), <code>-v, --verbose</code>, <code>--format &lt;json|compactjson&gt;</code> (before subcommand)</p>
+
+    <table>
+        <thead>
+        <tr><th>Command</th><th>Description</th><th>License</th><th>Output</th></tr>
+        </thead>
+        <tbody>
+        <tr><td colspan="4"><strong>Device Administration</strong></td></tr>
+        <tr><td><code>gmtool --format json admin list [--running|--off]</code></td><td>List devices</td><td>Free</td><td>JSON</td></tr>
+        <tr><td><code>gmtool admin start &lt;name|uuid&gt; [--coldboot]</code></td><td>Start device</td><td>Free</td><td>None (exit code)</td></tr>
+        <tr><td><code>gmtool admin stop &lt;name|uuid&gt;</code></td><td>Stop device</td><td>Free</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool admin stopall</code></td><td>Stop all devices</td><td>Paid</td><td>None</td></tr>
+        <tr><td><code>gmtool admin create &lt;hw&gt; &lt;os&gt; &lt;name&gt; [opts]</code></td><td>Create device</td><td>Paid</td><td>Download progress</td></tr>
+        <tr><td><code>gmtool admin edit &lt;name|uuid&gt; [opts]</code></td><td>Edit device config</td><td>Paid</td><td>None</td></tr>
+        <tr><td><code>gmtool admin details &lt;name|uuid&gt;</code></td><td>Device properties</td><td>Paid</td><td>Key : Value</td></tr>
+        <tr><td><code>gmtool admin clone &lt;name|uuid&gt; &lt;new_name&gt;</code></td><td>Duplicate device</td><td>Paid</td><td>None (exit code)</td></tr>
+        <tr><td><code>gmtool admin delete &lt;name|uuid&gt;</code></td><td>Delete device</td><td>Paid</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool admin factoryreset &lt;name|uuid&gt;</code></td><td>Factory reset</td><td>Paid</td><td>None</td></tr>
+        <tr><td><code>gmtool admin hwprofiles</code></td><td>List hardware profiles</td><td>Paid</td><td>Table</td></tr>
+        <tr><td><code>gmtool admin osimages</code></td><td>List OS images</td><td>Paid</td><td>Table</td></tr>
+        <tr><td><code>gmtool admin logzip &lt;path&gt;</code></td><td>Generate log archive</td><td>Paid</td><td>None</td></tr>
+        <tr><td colspan="4"><strong>Device Interaction</strong> (<code>--name</code> goes AFTER the action)</td></tr>
+        <tr><td><code>gmtool device adbconnect --name &lt;device&gt;</code></td><td>Connect to ADB</td><td>Paid</td><td>None (exit code)</td></tr>
+        <tr><td><code>gmtool device adbdisconnect --name &lt;device&gt;</code></td><td>Disconnect ADB</td><td>Paid</td><td>None</td></tr>
+        <tr><td><code>gmtool device install --name &lt;device&gt; &lt;apk&gt;</code></td><td>Install APK</td><td>Paid</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool device push --name &lt;device&gt; &lt;src&gt; &lt;dst&gt;</code></td><td>Push file to device</td><td>Paid</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool device pull --name &lt;device&gt; &lt;src&gt; &lt;dst&gt;</code></td><td>Pull file from device</td><td>Paid</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool device flash --name &lt;device&gt; &lt;zip&gt;</code></td><td>Flash archive</td><td>Paid</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool device logcatdump --name &lt;device&gt; &lt;file&gt;</code></td><td>Dump logcat</td><td>Paid</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool device logcatclear --name &lt;device&gt;</code></td><td>Clear logcat</td><td>Paid</td><td>None</td></tr>
+        <tr><td colspan="4"><strong>Configuration</strong></td></tr>
+        <tr><td><code>gmtool config list</code></td><td>Show all config (KEY=VALUE)</td><td>Free</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool config get &lt;key&gt;</code></td><td>Get single config value</td><td>Free</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool config set hypervisor &lt;qemu|virtualbox&gt;</code></td><td>Switch hypervisor</td><td>Free</td><td>None</td></tr>
+        <tr><td><code>gmtool config set use_custom_sdk on</code></td><td>Enable custom Android SDK</td><td>Free</td><td>None</td></tr>
+        <tr><td><code>gmtool config set sdk_path &lt;path&gt;</code></td><td>Set Android SDK path</td><td>Free</td><td>None</td></tr>
+        <tr><td><code>gmtool config reset</code></td><td>Restore defaults</td><td>Free</td><td>None</td></tr>
+        <tr><td><code>gmtool config signout</code></td><td>Sign out, remove license</td><td>Free</td><td>None</td></tr>
+        <tr><td colspan="4"><strong>License</strong></td></tr>
+        <tr><td><code>gmtool license info</code></td><td>License type &amp; expiry</td><td>Free</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool license register &lt;key&gt;</code></td><td>Activate license</td><td>Free</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool license count</code></td><td>Activated workstations</td><td>Free</td><td>Plain text</td></tr>
+        <tr><td><code>gmtool license validity</code></td><td>Days remaining</td><td>Free</td><td>Plain text</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Device Creation Options (for <code>admin create</code> / <code>admin edit</code>)</h3>
+
+    <table>
+        <thead>
+        <tr><th>Option</th><th>Description</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><code>--density &lt;120-640&gt;</code></td><td>Screen density (dpi)</td><td></td></tr>
+        <tr><td><code>--width &lt;value&gt;</code> / <code>--height &lt;value&gt;</code></td><td>Screen dimensions</td><td></td></tr>
+        <tr><td><code>--virtualkeyboard &lt;on|off&gt;</code></td><td>Virtual keyboard</td><td></td></tr>
+        <tr><td><code>--navbar &lt;on|off&gt;</code></td><td>Android navigation bar</td><td></td></tr>
+        <tr><td><code>--nbcpu &lt;value&gt;</code></td><td>Number of processors</td><td></td></tr>
+        <tr><td><code>--ram &lt;value&gt;</code></td><td>Memory in MB</td><td></td></tr>
+        <tr><td><code>--network-mode &lt;nat|bridge&gt;</code></td><td>Network mode</td><td>VirtualBox only</td></tr>
+        <tr><td><code>--root-access &lt;on|off&gt;</code></td><td>Root access</td><td>Android 12+ default: off</td></tr>
+        <tr><td><code>--quickboot &lt;on|off&gt;</code></td><td>Resume state</td><td>QEMU only, not Windows</td></tr>
+        <tr><td><code>--sysprop &lt;prop&gt;:&lt;val&gt;</code></td><td>Build properties</td><td>MODEL, BRAND, MANUFACTURER, etc.</td></tr>
+        </tbody>
+    </table>
+
+    <!-- ============================================ -->
+    <!-- VERIFY AFTER ACTION -->
+    <!-- ============================================ -->
+    <h2>Verify Start / Stop Operations</h2>
+
+    <div class="guard-box">
+        <p><strong>Always verify device state after a start or stop command.</strong> Most <code>gmtool</code> subcommands return no output on success — exit code 0 does not guarantee the device is in the expected state. Query <code>admin list</code> to confirm.</p>
+    </div>
+
+    <pre><code><span class="comment"># After gmtool admin start "my-device"</span>
+<span class="prompt">$</span> gmtool admin list --running
+<span class="comment"># Expected: "my-device" appears with State = On</span>
+<span class="comment"># If not listed: check exit code, run gmtool admin details "my-device" for diagnostics,</span>
+<span class="comment"># or retry with: gmtool -v admin start "my-device"</span>
+
+<span class="comment"># After gmtool admin stop "my-device"</span>
+<span class="prompt">$</span> gmtool admin list --off
+<span class="comment"># Expected: "my-device" appears with State = Off</span>
+<span class="comment"># If still listed as On: retry stop, or close the Genymotion Desktop GUI and retry</span>
+
+<span class="comment"># Structured verification via JSON (reliable):</span>
+<span class="prompt">$</span> gmtool --format json admin list \
+    | python3 -c "import sys,json; \
+      d=next(i for i in json.load(sys.stdin)['instances'] if i['name']=='my-device'); \
+      print(d['state'], d['adb_serial'])"
+<span class="output">on 127.0.0.1:6555</span></code></pre>
+
+    <p><strong>Report the verified state to the user.</strong> Don't say "the device is started" — say "I confirmed the device is running: <code>admin list --running</code> shows it with State = On and adb_serial = 127.0.0.1:6555."</p>
+
+    <!-- ============================================ -->
+    <!-- ERROR HANDLING -->
+    <!-- ============================================ -->
+    <h2>Error Handling &amp; Troubleshooting</h2>
+
+    <table>
+        <thead>
+        <tr><th>Exit Code</th><th>Meaning</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>0</td><td>Success</td><td>—</td></tr>
+        <tr><td>1</td><td>Unknown command</td><td>Check syntax with <code>gmtool --help</code></td></tr>
+        <tr><td>2</td><td>Invalid parameter value</td><td>Fix the value (e.g. out-of-range density, bad UUID)</td></tr>
+        <tr><td>3</td><td>Command failed / device won't start</td><td>Try <code>--coldboot</code>. Run with <code>-v</code> for details. Check port 6379 conflict. Use <code>gmtool admin logzip ~/gm-logs.zip</code> to bundle logs.</td></tr>
+        <tr><td>4</td><td>Virtualization engine unresponsive</td><td>Open Genymotion Desktop GUI, wait for it to be ready, then retry. Check hypervisor config: <code>gmtool config --hypervisor virtualbox|qemu</code></td></tr>
+        <tr><td>5</td><td>Virtual device not found</td><td>Wrong name/UUID — check <code>gmtool admin list</code> for exact names</td></tr>
+        <tr><td>6</td><td>Unable to connect (cloud auth)</td><td>Check <code>gmtool config --email</code> / <code>--password</code></td></tr>
+        <tr><td>9</td><td>Licence not activated</td><td><code>gmtool license info</code> to check status, then <code>gmtool license register &lt;key&gt;</code></td></tr>
+        <tr><td>10</td><td>Invalid licence key</td><td>Double-check the key with Genymotion support</td></tr>
+        <tr><td>13</td><td>Unable to start device</td><td>Check system resources (RAM/CPU). See <a href="https://www.genymotion.com/faq/vd-not-started">FAQ</a></td></tr>
+        <tr><td>14</td><td>Requires Indie/Business licence</td><td>User must upgrade, or perform the action via the Genymotion Desktop GUI</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Port 6379 Conflict (QEMU on macOS/Linux)</h3>
+
+    <div class="warn-box">
+        <p>QEMU forwards port 6379 from the virtual device to localhost. If <strong>Redis</strong> (or anything else) is already on port 6379, the device will fail to start with exit code 3.</p>
+    </div>
+
+    <pre><code><span class="comment"># Check for port conflict:</span>
+<span class="prompt">$</span> lsof -i -P -n | grep 6379
+<span class="output">redis-ser  4526 user    6u  IPv4 ...  TCP 127.0.0.1:6379 (LISTEN)</span>
+
+<span class="comment"># Fix: stop Redis before starting the device</span>
+<span class="prompt">$</span> brew services stop redis   <span class="comment"># macOS</span>
+<span class="prompt">$</span> sudo systemctl stop redis  <span class="comment"># Linux</span>
+
+<span class="comment"># Then start the device</span>
+<span class="prompt">$</span> gmtool admin start "my-device"</code></pre>
+
+    <h3>VirtualBox DHCP Error (Windows)</h3>
+
+    <p>Hyper-V must be completely disabled when using VirtualBox:</p>
+    <pre><code><span class="prompt">&gt;</span> bcdedit /set hypervisorlaunchtype off
+<span class="comment"># Reboot required</span></code></pre>
+
+    <h3>ARM Apps on x86 Devices</h3>
+
+    <pre><code><span class="comment"># Flash ARM translation for x86 devices running ARM-only apps:</span>
+<span class="prompt">$</span> adb push Genymotion-ARM-Translation.zip /sdcard/Download/
+<span class="prompt">$</span> adb shell "/system/bin/flash-archive.sh /sdcard/Download/Genymotion-ARM-Translation.zip"</code></pre>
+    <p>Note: Apple Silicon Macs run <code>arm64</code> images natively — no translation needed, but only <code>arm64-v8a</code> apps are supported.</p>
+
+    <h3>Google Play Store</h3>
+
+    <p>Google Play is not pre-installed. Flash Open GApps:</p>
+    <pre><code><span class="prompt">$</span> gmtool device flash --name "my-device" open_gapps.zip</code></pre>
+
+    <h3>Root Access</h3>
+
+    <p>Android 12+ images are non-rooted by default:</p>
+    <pre><code><span class="comment"># Enable at creation:</span>
+<span class="prompt">$</span> gmtool admin create "Pixel 9" "Android 14.0" "rooted-device" --root-access on
+
+<span class="comment"># Or toggle on a running device via ADB:</span>
+<span class="prompt">$</span> adb root     <span class="comment"># Enable root shell</span>
+<span class="prompt">$</span> adb unroot   <span class="comment"># Disable root shell</span></code></pre>
+
+    <!-- ============================================ -->
+    <!-- PLATFORM INSTALLATION -->
+    <!-- ============================================ -->
+    <h2>Installation by Platform</h2>
+
+    <table>
+        <thead>
+        <tr><th>Platform</th><th>Supported Versions</th><th>Default Hypervisor</th><th>Architecture</th></tr>
+        </thead>
+        <tbody>
+        <tr><td><strong>macOS</strong></td><td>Sequoia 15, Sonoma 14</td><td>QEMU (recommended)</td><td>Intel + Apple Silicon (Rosetta required)</td></tr>
+        <tr><td><strong>Windows</strong></td><td>10/11 64-bit (x86_64 only)</td><td>VirtualBox (included)</td><td>x86_64 only. Hyper-V must be disabled for VBox.</td></tr>
+        <tr><td><strong>Linux</strong></td><td>Ubuntu 24.04, Debian 13, Fedora 43</td><td>QEMU/KVM (embedded)</td><td>x86_64 only</td></tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+        <tr><th>Platform</th><th>Apps Supported</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>Intel Mac/PC</td><td>x86_64 (Android 11+), x86 (Android 5-10), ARM via translation</td></tr>
+        <tr><td>Apple Silicon Mac</td><td>arm64-v8a only</td></tr>
+        <tr><td>Linux x86_64</td><td>x86_64, x86, ARM via translation</td></tr>
+        </tbody>
+    </table>
+
+    <footer>
+        <p>gmtool &amp; genyshell Desktop Runbook &mdash; Generated for AI assistant consumption &mdash; <a href="https://docs.genymotion.com/desktop/">Official Documentation</a> &nbsp;|&nbsp; <a href="https://rozz.genymotion.com/runbooks/gmsaas-cli-runbook.html">gmsaas Cloud Runbook</a></p>
+        <p class="muted">Last updated: March 16, 2026 &nbsp;|&nbsp; Tested on: gmtool 3.9.0, macOS (Apple Silicon, QEMU) &nbsp;|&nbsp; AI Site powered by <a href="https://rozz.site">Rozz</a></p>
+    </footer>
+
+</div>
+</body>
+</html>
