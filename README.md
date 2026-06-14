@@ -20,7 +20,7 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m pytest -q
 ```
-Live agent runs additionally need these on PATH: the `claude` CLI, `gmsaas`, `adb` (Android platform-tools), and `node` (Turndown).
+Live agent runs additionally need these on PATH: the `claude` CLI, `adb` (Android platform-tools), and `node` (Turndown). The agent installs **gmsaas** itself — it's the product under test, not a prerequisite. (gmsaas is only needed on the host for the operator's funding pre-flight, `funding.preflight_funding`.)
 
 ## How it was built
 Authored by Claude Opus 4.8 in Claude Code: a multi-agent workflow produced the build spec — goals, evals, a 100-point rubric, and this test suite (see `hackathon/build-day/BUILD_PROMPT.md`) — which a headless Claude Code session then implemented block-by-block against the suite. Demo walkthrough: `hackathon/build-day/DEMO_SCRIPT.md`.
